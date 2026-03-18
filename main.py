@@ -231,4 +231,199 @@ async def get_markets():
 
 @app.get("/",response_class=HTMLResponse)
 async def index():
-    return """YOUR HTML 그대로 유지"""
+    return """
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>War News</title>
+<style>
+body{
+background:#000;
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+color:white;
+}
+.topbar{
+position:sticky;
+top:0;
+background:#000;
+z-index:1000;
+border-bottom:1px solid #222;
+padding-bottom:0;
+}
+.topbar .container{
+padding-bottom:0;
+margin-bottom:0;
+}
+.container{
+max-width:1100px;
+margin:auto;
+padding:0 20px 40px 20px;
+}
+.header{
+padding:20px 0 10px 0;
+font-size:28px;
+font-weight:600;
+}
+.ticker{
+width:100%;
+overflow:hidden;
+border-top:1px solid #111;
+border-bottom:1px solid #111;
+background:#050505;
+}
+.ticker-track{
+white-space:nowrap;
+display:inline-block;
+padding:8px 0;
+animation:tickerMove 35s linear infinite;
+font-size:13px;
+}
+.ticker-item{
+margin-right:40px;
+}
+.up{ color:#22c55e; }
+.down{ color:#ef4444; }
+@keyframes tickerMove{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
+}
+.buttons{
+padding:14px 0 16px 0;
+}
+button{
+padding:8px 16px;
+margin-right:10px;
+border:none;
+border-radius:6px;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+font-size:14px;
+}
+button.active{ background:#2563eb; }
+#btn-BREAKING{
+background:#2a0f0f;
+border:1px solid #ef4444;
+}
+#btn-BREAKING.active{
+background:#3a1414;
+border:1px solid #ff4d4d;
+box-shadow:0 0 6px rgba(239,68,68,0.4);
+}
+#news{
+width:100%;
+margin-top:10px;
+}
+.card{
+background:#1a1a1a;
+padding:12px 18px;
+border-radius:10px;
+margin-bottom:8px;
+border:1px solid #2a2a2a;
+}
+.breaking-card{
+background:#2a0f0f;
+border:1px solid #ef4444;
+box-shadow:0 0 6px rgba(239,68,68,0.35);
+}
+.meta{
+font-size:12px;
+color:#9ca3af;
+margin-bottom:4px;
+}
+.title{
+font-size:14px;
+line-height:1.35;
+font-weight:500;
+}
+.breaking{ color:#ef4444; font-weight:600; }
+a{ text-decoration:none; color:white; }
+a:hover{ opacity:0.85; }
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+<div class="container">
+<div class="header">War News</div>
+
+<div class="ticker">
+<div class="ticker-track" id="ticker"></div>
+</div>
+
+<div class="buttons">
+<button onclick="setFilter('ALL')" id="btn-ALL" class="active">전체 뉴스</button>
+<button onclick="setFilter('BREAKING')" id="btn-BREAKING">주요 속보</button>
+</div>
+
+</div>
+</div>
+
+<div class="container">
+<div id="news"></div>
+</div>
+
+<script>
+let allNews=[]
+let currentFilter="ALL"
+
+function setFilter(type){
+currentFilter=type
+document.querySelectorAll("button").forEach(b=>b.classList.remove("active"))
+document.getElementById("btn-"+type).classList.add("active")
+render()
+}
+
+function render(){
+const container=document.getElementById("news")
+container.innerHTML=""
+const filtered=currentFilter==="ALL"? allNews : allNews.filter(n=>n.breaking)
+if(filtered.length===0){ container.innerHTML="<p>관련 뉴스가 없습니다.</p>"; return }
+let html=[]
+filtered.forEach(n=>{
+const cardClass = n.breaking ? "card breaking-card" : "card"
+html.push(`<div class="${cardClass}"><div class="meta">${n.publisher} | ${n.time}</div><div class="title ${n.breaking ? "breaking":""}"><a href="${n.link}" target="_blank">${n.breaking ? "[속보] ":""}${n.title}</a></div></div>`)
+})
+container.innerHTML = html.join("")
+}
+
+async function loadNews(){
+try{
+const res=await fetch("/api/news")
+const data=await res.json()
+allNews=data.news
+render()
+}catch(e){
+document.getElementById("news").innerHTML="서버 연결 오류"
+}
+}
+loadNews()
+setInterval(loadNews,30000)
+
+// MARKET TICKER
+async function loadMarkets(){
+try{
+const res=await fetch("/api/markets")
+const data=await res.json()
+const ticker=document.getElementById("ticker")
+let tickerHtml=[]
+data.markets.forEach(m=>{
+const cls = parseFloat(m.change) < 0 ? "down" : "up"
+const priceFormatted = Number(m.price).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2})
+const changeFormatted = `(${m.change}%)`
+tickerHtml.push(`<span class="ticker-item"><span class="ticker-name" style="color:#ffffff">${m.name}</span> <span class="ticker-price ${cls}" style="color:${cls==='up'?'#22c55e':'#ef4444'}">${priceFormatted} ${changeFormatted}</span></span>`)
+})
+ticker.innerHTML = tickerHtml.join("")
+}catch(e){console.log("Market API error",e)}
+}
+loadMarkets()
+setInterval(loadMarkets,10000)
+</script>
+
+</body>
+</html>
+"""
