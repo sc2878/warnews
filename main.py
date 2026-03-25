@@ -225,64 +225,93 @@ max-width:900px;
 margin:auto;
 padding:0 16px;
 }
-.header{
-padding:16px 0 8px 0;
-font-size:22px;
-font-weight:600;
-}
 
-/* 🔴 검색창 */
+/* 🔴 검색창 = 카드 폭 완전 일치 */
 .search-box{
-margin:8px 0 10px 0;
+margin:12px 0 14px 0;
+width:100%;
 }
 .search-box input{
 width:100%;
-padding:10px;
-border-radius:6px;
+box-sizing:border-box;
+padding:14px 14px;
+border-radius:8px;
 border:1px solid #333;
 background:#111;
 color:white;
-font-size:14px;
+font-size:15px;
 outline:none;
 }
 
-/* 🔴 버튼 간격 축소 */
+/* 🔴 버튼 터치 영역 확대 */
 .buttons{
-padding:8px 0 10px 0;
+padding:10px 0 12px 0;
 }
 button{
-padding:6px 12px;
+padding:8px 14px;
 margin-right:6px;
 border:none;
-border-radius:6px;
+border-radius:8px;
 background:#1f1f1f;
 color:white;
 cursor:pointer;
-font-size:13px;
-}
-button.active{ background:#2563eb; }
-
-#btn-BREAKING{
-background:#2a0f0f;
-border:1px solid #ef4444;
-}
-#btn-BREAKING.active{
-background:#3a1414;
-border:1px solid #ff4d4d;
-box-shadow:0 0 4px rgba(239,68,68,0.4);
+font-size:14px;
 }
 
-/* 🔴 카드 간격 압축 */
-#news{
-width:100%;
-margin-top:6px;
-}
+/* 🔴 카드 크기 확대 (모바일 가독성 핵심) */
 .card{
 background:#1a1a1a;
-padding:10px 14px;
-border-radius:8px;
-margin-bottom:6px;
+padding:14px 16px;
+border-radius:10px;
+margin-bottom:10px;
 border:1px solid #2a2a2a;
+}
+.breaking-card{
+background:#2a0f0f;
+border:1px solid #ef4444;
+box-shadow:0 0 4px rgba(239,68,68,0.3);
+}
+
+/* 🔴 텍스트 확대 */
+.meta{
+font-size:12px;
+color:#9ca3af;
+margin-bottom:4px;
+}
+.title{
+font-size:15px;
+line-height:1.45;
+font-weight:500;
+}
+
+/* 🔴 모바일 최적화 */
+@media (max-width:600px){
+.container{
+padding:0 12px;
+}
+
+.header{
+font-size:20px;
+padding:14px 0 6px 0;
+}
+
+.search-box input{
+font-size:16px;
+padding:14px;
+}
+
+button{
+font-size:14px;
+padding:8px 12px;
+}
+
+.title{
+font-size:15px;
+}
+
+.card{
+padding:16px;
+margin-bottom:12px;
 }
 .breaking-card{
 background:#2a0f0f;
