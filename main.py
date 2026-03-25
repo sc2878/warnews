@@ -33,7 +33,7 @@ RSS_FEEDS = {
     "NPR": "https://feeds.npr.org/1004/rss.xml",
     "ABC": "https://abcnews.go.com/abcnews/internationalheadlines",
     "CBS": "https://www.cbsnews.com/latest/rss/world",
-    "FOX": "https://moxie.foxnews.com/google-publisher/world.xml
+    "FOX": "https://moxie.foxnews.com/google-publisher/world.xml,
 }
 
 WAR_KEYWORDS = [
