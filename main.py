@@ -11,12 +11,16 @@ import yfinance as yf
 app = FastAPI()
 
 # THREADPOOL
-executor = ThreadPoolExecutor(max_workers=10)
+executor = ThreadPoolExecutor(max_workers=5)
 
 # 메모리 캐시
 CACHE = []
 LAST_UPDATE = 0
 MARKET_CACHE = []
+
+# LRU 번역 캐시
+TRANSLATE_CACHE = OrderedDict()
+MAX_TRANSLATE_CACHE = 200
 
 RSS_FEEDS = {
     "BBC": "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -94,7 +98,7 @@ def fetch_feed(publisher,url):
     seen=set()
     try:
         feed=feedparser.parse(url)
-        for entry in feed.entries[:10]:
+        for entry in feed.entries[:5]:
             title=entry.get("title","")
             lower=title.lower()
             if not any(k in lower for k in WAR_KEYWORDS):
@@ -115,8 +119,10 @@ def fetch_feed(publisher,url):
                 "link":entry.get("link"),
                 "raw_time":published_time
             })
+        del feed
     except:
         pass
+
     return results
 
 def collect_news():
@@ -160,20 +166,37 @@ def collect_markets():
     MARKET_CACHE = results
 
 async def background_collector():
-    global CACHE,LAST_UPDATE
+    global CACHE, LAST_UPDATE
+
     while True:
-        loop=asyncio.get_event_loop()
-        news=await loop.run_in_executor(
+        loop = asyncio.get_event_loop()
+
+        news = await loop.run_in_executor(
             executor,
             collect_news
         )
-        CACHE=news
-        await loop.run_in_executor(executor, collect_markets)
-        LAST_UPDATE=datetime.now().timestamp()
-        await asyncio.sleep(10)
+
+        CACHE = news
+
+        await loop.run_in_executor(
+            executor,
+            collect_markets
+        )
+
+        LAST_UPDATE = datetime.now().timestamp()
+
+        # 🔴 10 → 30초
+        await asyncio.sleep(30)
 
 @app.on_event("startup")
 async def startup():
+    loop = asyncio.get_event_loop()
+
+    news = await loop.run_in_executor(executor, collect_news)
+    CACHE.extend(news)
+
+    await loop.run_in_executor(executor, collect_markets)
+
     asyncio.create_task(background_collector())
 
 @app.get("/api/news")
@@ -372,7 +395,7 @@ const priceFormatted = Number(m.price).toLocaleString('en-US',{minimumFractionDi
 const changeFormatted = `(${m.change}%)`
 tickerHtml.push(`<span class="ticker-item"><span class="ticker-name" style="color:#ffffff">${m.name}</span> <span class="ticker-price ${cls}" style="color:${cls==='up'?'#22c55e':'#ef4444'}">${priceFormatted} ${changeFormatted}</span></span>`)
 })
-ticker.innerHTML = tickerHtml.join("")
+ticker.innerHTML = tickerHtml.join("") + tickerHtml.join("")
 }catch(e){console.log("Market API error",e)}
 }
 loadMarkets()

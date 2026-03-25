@@ -11,12 +11,16 @@ import yfinance as yf
 app = FastAPI()
 
 # THREADPOOL
-executor = ThreadPoolExecutor(max_workers=10)
+executor = ThreadPoolExecutor(max_workers=5)
 
 # 메모리 캐시
 CACHE = []
 LAST_UPDATE = 0
 MARKET_CACHE = []
+
+# LRU 번역 캐시
+TRANSLATE_CACHE = OrderedDict()
+MAX_TRANSLATE_CACHE = 200
 
 RSS_FEEDS = {
     "BBC": "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -43,15 +47,19 @@ BREAKING_WORDS = [
     "airstrike","offensive","escalation","missile"
 ]
 
-MARKET_TICKERS = ["^GSPC","^NDX","CL=F","GC=F","DX-Y.NYB","BTC-USD"]
+MARKET_TICKERS = ["^GSPC","^NDX","KRW=X","EURKRW=X", "JPYKRW=X","GC=F","SI=F","CL=F","BTC-USD","ETH-USD"]
 
 MARKET_NAMES = {
     "^GSPC": "S&P 500",
     "^NDX": "Nasdaq-100",
+    "KRW=X": "USD",
+    "EURKRW=X": "EUR",
+    "JPYKRW=X": "JPY",
+    "GC=F": "Gold",
+    "SI=F": "Silver",
     "CL=F": "WTI",
-    "GC=F": "GOLD",
-    "DX-Y.NYB": "US Dollar Index",
-    "BTC-USD": "BTC"
+    "BTC-USD": "BTC",
+    "ETH-USD": "ETC"
 }
 
 def translate_to_korean(text):
@@ -90,7 +98,7 @@ def fetch_feed(publisher,url):
     seen=set()
     try:
         feed=feedparser.parse(url)
-        for entry in feed.entries[:10]:
+        for entry in feed.entries[:5]:
             title=entry.get("title","")
             lower=title.lower()
             if not any(k in lower for k in WAR_KEYWORDS):
@@ -111,8 +119,10 @@ def fetch_feed(publisher,url):
                 "link":entry.get("link"),
                 "raw_time":published_time
             })
+        del feed
     except:
         pass
+
     return results
 
 def collect_news():
@@ -156,20 +166,37 @@ def collect_markets():
     MARKET_CACHE = results
 
 async def background_collector():
-    global CACHE,LAST_UPDATE
+    global CACHE, LAST_UPDATE
+
     while True:
-        loop=asyncio.get_event_loop()
-        news=await loop.run_in_executor(
+        loop = asyncio.get_event_loop()
+
+        news = await loop.run_in_executor(
             executor,
             collect_news
         )
-        CACHE=news
-        await loop.run_in_executor(executor, collect_markets)
-        LAST_UPDATE=datetime.now().timestamp()
-        await asyncio.sleep(10)
+
+        CACHE = news
+
+        await loop.run_in_executor(
+            executor,
+            collect_markets
+        )
+
+        LAST_UPDATE = datetime.now().timestamp()
+
+        # 🔴 10 → 30초
+        await asyncio.sleep(30)
 
 @app.on_event("startup")
 async def startup():
+    loop = asyncio.get_event_loop()
+
+    news = await loop.run_in_executor(executor, collect_news)
+    CACHE.extend(news)
+
+    await loop.run_in_executor(executor, collect_markets)
+
     asyncio.create_task(background_collector())
 
 @app.get("/api/news")
@@ -229,7 +256,7 @@ background:#050505;
 white-space:nowrap;
 display:inline-block;
 padding:8px 0;
-animation:tickerMove 35s linear infinite;
+animation:tickerMove 60s linear infinite;
 font-size:13px;
 }
 .ticker-item{
@@ -238,8 +265,8 @@ margin-right:40px;
 .up{ color:#22c55e; }
 .down{ color:#ef4444; }
 @keyframes tickerMove{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
+0%{transform:translateX(0)}
+100%{transform:translateX(-50%)}
 }
 .buttons{
 padding:14px 0 16px 0;
@@ -368,7 +395,7 @@ const priceFormatted = Number(m.price).toLocaleString('en-US',{minimumFractionDi
 const changeFormatted = `(${m.change}%)`
 tickerHtml.push(`<span class="ticker-item"><span class="ticker-name" style="color:#ffffff">${m.name}</span> <span class="ticker-price ${cls}" style="color:${cls==='up'?'#22c55e':'#ef4444'}">${priceFormatted} ${changeFormatted}</span></span>`)
 })
-ticker.innerHTML = tickerHtml.join("")
+ticker.innerHTML = tickerHtml.join("") + tickerHtml.join("")
 }catch(e){console.log("Market API error",e)}
 }
 loadMarkets()
