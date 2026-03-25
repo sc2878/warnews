@@ -233,7 +233,7 @@ background:#050505;
 white-space:nowrap;
 display:inline-block;
 padding:8px 0;
-animation:tickerMove 35s linear infinite;
+animation:tickerMove 60s linear infinite;
 font-size:13px;
 }
 .ticker-item{
@@ -242,8 +242,8 @@ margin-right:40px;
 .up{ color:#22c55e; }
 .down{ color:#ef4444; }
 @keyframes tickerMove{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
+0%{transform:translateX(0)}
+100%{transform:translateX(-50%)}
 }
 .buttons{
 padding:14px 0 16px 0;
