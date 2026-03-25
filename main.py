@@ -43,7 +43,7 @@ BREAKING_WORDS = [
     "airstrike","offensive","escalation","missile"
 ]
 
-MARKET_TICKERS = ["^GSPC","^NDX","CL=F","GC=F","DX-Y.NYB","BTC-USD"]
+MARKET_TICKERS = ["^GSPC","^NDX","KRW=X","EURKRW=X", "JPYKRW=X","GC=F","SI=F","CL=F","BTC-USD","ETH-USD"]
 
 MARKET_NAMES = {
     "^GSPC": "S&P 500",
@@ -51,9 +51,9 @@ MARKET_NAMES = {
     "KRW=X": "USD",
     "EURKRW=X": "EUR",
     "JPYKRW=X": "JPY",
-    "CL=F": "WTI",
     "GC=F": "Gold",
     "SI=F": "Silver",
+    "CL=F": "WTI",
     "BTC-USD": "BTC",
     "ETH-USD": "ETC"
 }
