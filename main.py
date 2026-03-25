@@ -198,3 +198,28 @@ async def get_news():
 @app.get("/api/markets")
 async def get_markets():
     return JSONResponse(content={"markets":MARKET_CACHE})
+
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    return """
+    <html>
+        <head><title>War News</title></head>
+        <body>
+            <h1>War News</h1>
+            <div id="news"></div>
+
+            <script>
+                fetch('/api/news')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('news');
+                    data.news.forEach(n => {
+                        const div = document.createElement('div');
+                        div.innerHTML = `<p>${n.title} (${n.publisher})</p>`;
+                        container.appendChild(div);
+                    });
+                });
+            </script>
+        </body>
+    </html>
+    """
