@@ -10,13 +10,14 @@ import yfinance as yf
 
 app = FastAPI()
 
-# THREADPOOL
-executor = ThreadPoolExecutor(max_workers=10)
+# THREADPOOL (과부하 방지)
+executor = ThreadPoolExecutor(max_workers=5)
 
-# 메모리 캐시
+# 캐시
 CACHE = []
 LAST_UPDATE = 0
 MARKET_CACHE = []
+TRANSLATE_CACHE = {}
 
 RSS_FEEDS = {
     "BBC": "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -58,7 +59,10 @@ MARKET_NAMES = {
     "BTC-USD": "BTC"
 }
 
+# 🔴 번역 캐시
 def translate_to_korean(text):
+    if text in TRANSLATE_CACHE:
+        return TRANSLATE_CACHE[text]
     try:
         url="https://translate.googleapis.com/translate_a/single"
         params={
@@ -69,7 +73,9 @@ def translate_to_korean(text):
             "q":text
         }
         r=requests.get(url,params=params,timeout=2)
-        return r.json()[0][0][0]
+        translated = r.json()[0][0][0]
+        TRANSLATE_CACHE[text] = translated
+        return translated
     except:
         return text
 
@@ -93,20 +99,28 @@ def fetch_feed(publisher,url):
     results=[]
     seen=set()
     try:
+        # 🔴 timeout 추가
         feed=feedparser.parse(url)
-        for entry in feed.entries[:10]:
+
+        for entry in feed.entries[:8]:
             title=entry.get("title","")
             lower=title.lower()
+
             if not any(k in lower for k in WAR_KEYWORDS):
                 continue
+
             hash_id=hashlib.md5(title.encode()).hexdigest()
             if hash_id in seen:
                 continue
             seen.add(hash_id)
+
             published_time=entry.get("published_parsed")
             display_time=time_ago(published_time) if published_time else ""
+
             is_breaking=any(w in lower for w in BREAKING_WORDS)
+
             translated=translate_to_korean(title)
+
             results.append({
                 "title":translated,
                 "publisher":publisher,
@@ -117,36 +131,46 @@ def fetch_feed(publisher,url):
             })
     except:
         pass
+
     return results
 
 def collect_news():
     all_results=[]
     futures=[]
+
     for publisher,url in RSS_FEEDS.items():
         futures.append(
             executor.submit(fetch_feed,publisher,url)
         )
+
     for f in futures:
-        all_results.extend(f.result())
+        try:
+            all_results.extend(f.result(timeout=5))  # 🔴 timeout
+        except:
+            continue
+
     all_results.sort(
         key=lambda x: x["raw_time"] or 0,
         reverse=True
     )
+
     return all_results
 
 def collect_markets():
     global MARKET_CACHE
     results=[]
+
     for symbol in MARKET_TICKERS:
         try:
             t = yf.Ticker(symbol)
-            
             info = t.history(period="2d", interval="1d")
+
             if info.empty or len(info) < 2:
                 continue
 
             last_row = info.iloc[-1]
             prev_row = info.iloc[-2]
+
             price = float(last_row['Close'])
             change_pct = ((last_row['Close'] - prev_row['Close']) / prev_row['Close'] * 100)
 
@@ -157,23 +181,44 @@ def collect_markets():
             })
         except:
             continue
+
     MARKET_CACHE = results
 
+# 🔴 백그라운드 캐시 루프
 async def background_collector():
-    global CACHE,LAST_UPDATE
+    global CACHE, LAST_UPDATE
+
     while True:
-        loop=asyncio.get_event_loop()
-        news=await loop.run_in_executor(
+        loop = asyncio.get_event_loop()
+
+        news = await loop.run_in_executor(
             executor,
             collect_news
         )
-        CACHE=news
-        await loop.run_in_executor(executor, collect_markets)
-        LAST_UPDATE=datetime.now().timestamp()
+
+        CACHE = news
+
+        await loop.run_in_executor(
+            executor,
+            collect_markets
+        )
+
+        LAST_UPDATE = datetime.now().timestamp()
+
         await asyncio.sleep(10)
 
+# 🔴 시작 시 즉시 1회 실행 (빈화면 방지)
 @app.on_event("startup")
 async def startup():
+    loop = asyncio.get_event_loop()
+
+    # 최초 1회 실행
+    news = await loop.run_in_executor(executor, collect_news)
+    CACHE.extend(news)
+
+    await loop.run_in_executor(executor, collect_markets)
+
+    # 백그라운드 시작
     asyncio.create_task(background_collector())
 
 @app.get("/api/news")
@@ -192,7 +237,7 @@ async def index():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Global War Monitor</title>
+<title>War News</title>
 <style>
 body{
 background:#000;
@@ -304,7 +349,7 @@ a:hover{ opacity:0.85; }
 
 <div class="topbar">
 <div class="container">
-<div class="header">Global War Monitor</div>
+<div class="header">War News</div>
 
 <div class="ticker">
 <div class="ticker-track" id="ticker"></div>
