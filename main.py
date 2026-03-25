@@ -199,12 +199,13 @@ async def get_markets():
 
 @app.get("/",response_class=HTMLResponse)
 async def index():
-return """
+    return """
+
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>워뉴스 Warnews</title>
+<title>War News</title>
 <style>
 body{
 background:#000;
@@ -220,32 +221,43 @@ z-index:1000;
 border-bottom:1px solid #222;
 }
 .container{
-max-width:900px;
+max-width:860px; /* 🔴 핵심: warwar 느낌 */
 margin:auto;
-padding:0 16px;
+padding:0 14px;
 }
 .header{
-padding:16px 0 8px 0;
-font-size:22px;
+padding:14px 0 6px 0;
+font-size:20px;
 font-weight:600;
 }
 
-/* 🔴 검색창 */
-.search-box{
-margin:8px 0 10px 0;
-}
-.search-box input{
+/* 🔴 ticker 압축 */
+.ticker{
 width:100%;
-padding:10px;
-border-radius:6px;
-border:1px solid #333;
-background:#111;
-color:white;
-font-size:14px;
-outline:none;
+overflow:hidden;
+border-top:1px solid #111;
+border-bottom:1px solid #111;
+background:#050505;
+}
+.ticker-track{
+white-space:nowrap;
+display:inline-block;
+padding:6px 0;
+animation:tickerMove 40s linear infinite;
+font-size:12px;
+}
+.ticker-item{
+margin-right:30px;
+}
+.up{ color:#22c55e; }
+.down{ color:#ef4444; }
+
+@keyframes tickerMove{
+0%{transform:translateX(0)}
+100%{transform:translateX(-50%)}
 }
 
-/* 🔴 버튼 간격 축소 */
+/* 🔴 버튼 압축 */
 .buttons{
 padding:8px 0 10px 0;
 }
@@ -271,7 +283,7 @@ border:1px solid #ff4d4d;
 box-shadow:0 0 4px rgba(239,68,68,0.4);
 }
 
-/* 🔴 카드 간격 압축 */
+/* 🔴 카드 밀도 핵심 */
 #news{
 width:100%;
 margin-top:6px;
@@ -288,6 +300,8 @@ background:#2a0f0f;
 border:1px solid #ef4444;
 box-shadow:0 0 4px rgba(239,68,68,0.3);
 }
+
+/* 🔴 텍스트 압축 */
 .meta{
 font-size:11px;
 color:#9ca3af;
@@ -302,6 +316,22 @@ font-weight:500;
 
 a{ text-decoration:none; color:white; }
 a:hover{ opacity:0.85; }
+
+/* 🔴 모바일 최적화 */
+@media (max-width:600px){
+.container{
+padding:0 10px;
+}
+.header{
+font-size:18px;
+}
+.title{
+font-size:14px;
+}
+.card{
+padding:12px;
+}
+}
 </style>
 </head>
 
@@ -309,11 +339,10 @@ a:hover{ opacity:0.85; }
 
 <div class="topbar">
 <div class="container">
-<div class="header">워뉴스 Warnews</div>
+<div class="header">War News</div>
 
-<!-- 🔴 검색창 추가 -->
-<div class="search-box">
-<input type="text" id="searchInput" placeholder="뉴스 검색..." oninput="render()">
+<div class="ticker">
+<div class="ticker-track" id="ticker"></div>
 </div>
 
 <div class="buttons">
@@ -341,33 +370,14 @@ render()
 
 function render(){
 const container=document.getElementById("news")
-const keyword=document.getElementById("searchInput").value.toLowerCase()
-
 container.innerHTML=""
-
-let filtered = currentFilter==="ALL" ? allNews : allNews.filter(n=>n.breaking)
-
-// 🔴 검색 필터 추가
-if(keyword){
-filtered = filtered.filter(n=> n.title.toLowerCase().includes(keyword))
-}
-
-if(filtered.length===0){
-container.innerHTML="<p>관련 뉴스가 없습니다.</p>"
-return
-}
-
+const filtered=currentFilter==="ALL"? allNews : allNews.filter(n=>n.breaking)
+if(filtered.length===0){ container.innerHTML="<p>관련 뉴스가 없습니다.</p>"; return }
 let html=[]
 filtered.forEach(n=>{
 const cardClass = n.breaking ? "card breaking-card" : "card"
-html.push(`<div class="${cardClass}">
-<div class="meta">${n.publisher} | ${n.time}</div>
-<div class="title ${n.breaking ? "breaking":""}">
-<a href="${n.link}" target="_blank">${n.breaking ? "[속보] ":""}${n.title}</a>
-</div>
-</div>`)
+html.push(`<div class="${cardClass}"><div class="meta">${n.publisher} | ${n.time}</div><div class="title ${n.breaking ? "breaking":""}"><a href="${n.link}" target="_blank">${n.breaking ? "[속보] ":""}${n.title}</a></div></div>`)
 })
-
 container.innerHTML = html.join("")
 }
 
@@ -381,9 +391,27 @@ render()
 document.getElementById("news").innerHTML="서버 연결 오류"
 }
 }
-
 loadNews()
 setInterval(loadNews,30000)
+
+// MARKET TICKER
+async function loadMarkets(){
+try{
+const res=await fetch("/api/markets")
+const data=await res.json()
+const ticker=document.getElementById("ticker")
+let tickerHtml=[]
+data.markets.forEach(m=>{
+const cls = parseFloat(m.change) < 0 ? "down" : "up"
+const priceFormatted = Number(m.price).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2})
+const changeFormatted = `(${m.change}%)`
+tickerHtml.push(`<span class="ticker-item"><span class="ticker-name" style="color:#ffffff">${m.name}</span> <span class="ticker-price ${cls}" style="color:${cls==='up'?'#22c55e':'#ef4444'}">${priceFormatted} ${changeFormatted}</span></span>`)
+})
+ticker.innerHTML = tickerHtml.join("") + tickerHtml.join("")
+}catch(e){console.log("Market API error",e)}
+}
+loadMarkets()
+setInterval(loadMarkets,10000)
 </script>
 
 </body>
