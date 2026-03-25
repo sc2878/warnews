@@ -18,10 +18,6 @@ CACHE = []
 LAST_UPDATE = 0
 MARKET_CACHE = []
 
-# LRU 번역 캐시
-TRANSLATE_CACHE = OrderedDict()
-MAX_TRANSLATE_CACHE = 200
-
 RSS_FEEDS = {
     "BBC": "https://feeds.bbci.co.uk/news/world/rss.xml",
     "CNN": "https://rss.cnn.com/rss/edition_world.rss",
