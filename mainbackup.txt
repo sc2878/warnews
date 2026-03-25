@@ -6,21 +6,18 @@ from datetime import datetime, timezone
 import hashlib
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from collections import OrderedDict
+import yfinance as yf
 
 app = FastAPI()
 
-# 🔴 THREADPOOL 축소
-executor = ThreadPoolExecutor(max_workers=2)
+# THREADPOOL (과부하 방지)
+executor = ThreadPoolExecutor(max_workers=5)
 
 # 캐시
 CACHE = []
 LAST_UPDATE = 0
 MARKET_CACHE = []
-
-# 🔴 LRU 번역 캐시
-TRANSLATE_CACHE = OrderedDict()
-MAX_TRANSLATE_CACHE = 200
+TRANSLATE_CACHE = {}
 
 RSS_FEEDS = {
     "BBC": "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -51,10 +48,19 @@ BREAKING_WORDS = [
     "airstrike","offensive","escalation","missile"
 ]
 
-# 🔴 번역 (LRU 적용)
+MARKET_TICKERS = ["^GSPC","^NDX","CL=F","GC=F","DX-Y.NYB","BTC-USD"]
+
+MARKET_NAMES = {
+    "^GSPC": "S&P 500",
+    "^NDX": "Nasdaq-100",
+    "CL=F": "WTI",
+    "GC=F": "GOLD",
+    "DX-Y.NYB": "US Dollar Index",
+    "BTC-USD": "BTC"
+}
+
 def translate_to_korean(text):
     if text in TRANSLATE_CACHE:
-        TRANSLATE_CACHE.move_to_end(text)
         return TRANSLATE_CACHE[text]
     try:
         url="https://translate.googleapis.com/translate_a/single"
@@ -67,11 +73,7 @@ def translate_to_korean(text):
         }
         r=requests.get(url,params=params,timeout=2)
         translated = r.json()[0][0][0]
-
         TRANSLATE_CACHE[text] = translated
-        if len(TRANSLATE_CACHE) > MAX_TRANSLATE_CACHE:
-            TRANSLATE_CACHE.popitem(last=False)
-
         return translated
     except:
         return text
@@ -97,9 +99,7 @@ def fetch_feed(publisher,url):
     seen=set()
     try:
         feed=feedparser.parse(url)
-
-        # 🔴 8 → 5 축소
-        for entry in feed.entries[:5]:
+        for entry in feed.entries[:8]:
             title=entry.get("title","")
             lower=title.lower()
 
@@ -115,7 +115,6 @@ def fetch_feed(publisher,url):
             display_time=time_ago(published_time) if published_time else ""
 
             is_breaking=any(w in lower for w in BREAKING_WORDS)
-
             translated=translate_to_korean(title)
 
             results.append({
@@ -126,11 +125,8 @@ def fetch_feed(publisher,url):
                 "link":entry.get("link"),
                 "raw_time":published_time
             })
-
-        del feed  # 🔴 메모리 해제
     except:
         pass
-
     return results
 
 def collect_news():
@@ -138,9 +134,7 @@ def collect_news():
     futures=[]
 
     for publisher,url in RSS_FEEDS.items():
-        futures.append(
-            executor.submit(fetch_feed,publisher,url)
-        )
+        futures.append(executor.submit(fetch_feed,publisher,url))
 
     for f in futures:
         try:
@@ -148,41 +142,48 @@ def collect_news():
         except:
             continue
 
-    all_results.sort(
-        key=lambda x: x["raw_time"] or 0,
-        reverse=True
-    )
-
+    all_results.sort(key=lambda x: x["raw_time"] or 0, reverse=True)
     return all_results
 
-# 🔴 market 기능 제거 (메모리 절약)
 def collect_markets():
     global MARKET_CACHE
-    MARKET_CACHE = []
+    results=[]
+    for symbol in MARKET_TICKERS:
+        try:
+            t = yf.Ticker(symbol)
+            info = t.history(period="2d", interval="1d")
 
-# 🔴 백그라운드 캐시 루프
+            if info.empty or len(info) < 2:
+                continue
+
+            last_row = info.iloc[-1]
+            prev_row = info.iloc[-2]
+
+            price = float(last_row['Close'])
+            change_pct = ((last_row['Close'] - prev_row['Close']) / prev_row['Close'] * 100)
+
+            results.append({
+                "name": MARKET_NAMES.get(symbol, symbol),
+                "price": price,
+                "change": f"{change_pct:+.2f}"
+            })
+        except:
+            continue
+
+    MARKET_CACHE = results
+
 async def background_collector():
     global CACHE, LAST_UPDATE
-
     while True:
         loop = asyncio.get_event_loop()
 
-        news = await loop.run_in_executor(
-            executor,
-            collect_news
-        )
-
+        news = await loop.run_in_executor(executor, collect_news)
         CACHE = news
 
-        await loop.run_in_executor(
-            executor,
-            collect_markets
-        )
+        await loop.run_in_executor(executor, collect_markets)
 
         LAST_UPDATE = datetime.now().timestamp()
-
-        # 🔴 10 → 30초
-        await asyncio.sleep(30)
+        await asyncio.sleep(10)
 
 @app.on_event("startup")
 async def startup():
@@ -202,4 +203,20 @@ async def get_news():
 @app.get("/api/markets")
 async def get_markets():
     return JSONResponse(content={"markets":MARKET_CACHE})
-    """
+
+@app.get("/",response_class=HTMLResponse)
+async def index():
+    return """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>War News</title>
+</head>
+<body>
+<script>
+let html=[]
+html.push(`<div class="card">TEST</div>`)
+</script>
+</body>
+</html>
+"""
