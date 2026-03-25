@@ -48,10 +48,14 @@ MARKET_TICKERS = ["^GSPC","^NDX","CL=F","GC=F","DX-Y.NYB","BTC-USD"]
 MARKET_NAMES = {
     "^GSPC": "S&P 500",
     "^NDX": "Nasdaq-100",
+    "KRW=X": "USD",
+    "EURKRW=X": "EUR",
+    "JPYKRW=X": "JPY",
     "CL=F": "WTI",
-    "GC=F": "GOLD",
-    "DX-Y.NYB": "US Dollar Index",
-    "BTC-USD": "BTC"
+    "GC=F": "Gold",
+    "SI=F": "Silver",
+    "BTC-USD": "BTC",
+    "ETH-USD": "ETC"
 }
 
 def translate_to_korean(text):
