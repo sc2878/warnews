@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import hashlib
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import yfinance as yf
 
 app = FastAPI()
 
@@ -138,29 +137,34 @@ def collect_news():
 
 def collect_markets():
     global MARKET_CACHE
-    results=[]
-    for symbol in MARKET_TICKERS:
-        try:
-            t = yf.Ticker(symbol)
+    results = []
 
-            info = t.history(period="2d", interval="1d")
-            if info.empty or len(info) < 2:
+    try:
+        # 무료 경량 API (pandas 없음)
+        url = "https://query1.finance.yahoo.com/v7/finance/quote"
+        symbols = ",".join(MARKET_TICKERS)
+
+        r = requests.get(url, params={"symbols": symbols}, timeout=2)
+        data = r.json()["quoteResponse"]["result"]
+
+        for item in data:
+            symbol = item.get("symbol")
+            price = item.get("regularMarketPrice")
+            change = item.get("regularMarketChangePercent")
+
+            if price is None or change is None:
                 continue
-
-            last_row = info.iloc[-1]
-            prev_row = info.iloc[-2]
-            price = float(last_row['Close'])
-            change_pct = ((last_row['Close'] - prev_row['Close']) / prev_row['Close'] * 100)
 
             results.append({
                 "name": MARKET_NAMES.get(symbol, symbol),
-                "price": price,
-                "change": f"{change_pct:+.2f}"
+                "price": float(price),
+                "change": f"{change:+.2f}"
             })
-        except:
-            continue
-    MARKET_CACHE = results
 
+    except:
+        pass
+
+    MARKET_CACHE = results
 async def background_collector():
     global CACHE, LAST_UPDATE
 
