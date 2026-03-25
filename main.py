@@ -256,7 +256,7 @@ background:#050505;
 white-space:nowrap;
 display:inline-block;
 padding:8px 0;
-animation:tickerMove 60s linear infinite;
+animation:tickerMove 45s linear infinite;
 font-size:13px;
 }
 .ticker-item{
