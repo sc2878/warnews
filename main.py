@@ -34,6 +34,10 @@ RSS_FEEDS = {
     "ABC": "https://abcnews.go.com/abcnews/internationalheadlines",
     "CBS": "https://www.cbsnews.com/latest/rss/world",
     "FOX": "https://moxie.foxnews.com/google-publisher/world.xml",
+    "DEFENSE NEWS": "https://www.defensenews.com/arc/outboundfeeds/rss/",
+    "THE WAR ZONE": "https://www.thedrive.com/the-war-zone/feed",
+    "FINANCIAL JUICE": "https://www.financialjuice.com/feed",
+    "LIVEUAMAP": "https://liveuamap.com/en/rss"
 }
 
 WAR_KEYWORDS = [
@@ -198,28 +202,4 @@ async def get_news():
 @app.get("/api/markets")
 async def get_markets():
     return JSONResponse(content={"markets":MARKET_CACHE})
-
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    return """
-    <html>
-        <head><title>War News</title></head>
-        <body>
-            <h1>War News</h1>
-            <div id="news"></div>
-
-            <script>
-                fetch('/api/news')
-                .then(res => res.json())
-                .then(data => {
-                    const container = document.getElementById('news');
-                    data.news.forEach(n => {
-                        const div = document.createElement('div');
-                        div.innerHTML = `<p>${n.title} (${n.publisher})</p>`;
-                        container.appendChild(div);
-                    });
-                });
-            </script>
-        </body>
-    </html>
     """
