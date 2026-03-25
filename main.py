@@ -216,106 +216,105 @@ async def index():
 body{
 background:#000;
 margin:0;
-font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;
 color:white;
+-webkit-text-size-adjust:100%;
 }
-.topbar{
-position:sticky;
-top:0;
-background:#000;
-z-index:1000;
-border-bottom:1px solid #222;
-padding-bottom:0;
-}
-.topbar .container{
-padding-bottom:0;
-margin-bottom:0;
-}
+
 .container{
 max-width:1100px;
 margin:auto;
-padding:0 20px 40px 20px;
+padding:0 14px 30px 14px;
 }
+
 .header{
-padding:20px 0 10px 0;
-font-size:28px;
+padding:16px 0 8px 0;
+font-size:22px;
 font-weight:600;
 }
-.ticker{
-width:100%;
-overflow:hidden;
-border-top:1px solid #111;
-border-bottom:1px solid #111;
-background:#050505;
-}
+
 .ticker-track{
 white-space:nowrap;
 display:inline-block;
-padding:8px 0;
+padding:6px 0;
 animation:tickerMove 45s linear infinite;
-font-size:13px;
+font-size:12px;
 }
+
 .ticker-item{
-margin-right:40px;
+margin-right:28px;
 }
-.up{ color:#22c55e; }
-.down{ color:#ef4444; }
-@keyframes tickerMove{
-0%{transform:translateX(0)}
-100%{transform:translateX(-50%)}
-}
+
 .buttons{
-padding:14px 0 16px 0;
+padding:10px 0 12px 0;
+display:flex;
+gap:8px;
 }
+
 button{
-padding:8px 16px;
-margin-right:10px;
+flex:1;
+padding:10px 0;
 border:none;
-border-radius:6px;
+border-radius:8px;
 background:#1f1f1f;
 color:white;
 cursor:pointer;
-font-size:14px;
+font-size:13px;
 }
-button.active{ background:#2563eb; }
-#btn-BREAKING{
-background:#2a0f0f;
-border:1px solid #ef4444;
-}
-#btn-BREAKING.active{
-background:#3a1414;
-border:1px solid #ff4d4d;
-box-shadow:0 0 6px rgba(239,68,68,0.4);
-}
+
 #news{
 width:100%;
-margin-top:10px;
+margin-top:8px;
 }
+
 .card{
 background:#1a1a1a;
-padding:12px 18px;
-border-radius:10px;
+padding:12px 14px;
+border-radius:12px;
 margin-bottom:8px;
 border:1px solid #2a2a2a;
 }
-.breaking-card{
-background:#2a0f0f;
-border:1px solid #ef4444;
-box-shadow:0 0 6px rgba(239,68,68,0.35);
-}
+
 .meta{
-font-size:12px;
+font-size:11px;
 color:#9ca3af;
 margin-bottom:4px;
 }
+
 .title{
 font-size:14px;
-line-height:1.35;
+line-height:1.45;
 font-weight:500;
+word-break:keep-all;
 }
-.breaking{ color:#ef4444; font-weight:600; }
-a{ text-decoration:none; color:white; }
-a:hover{ opacity:0.85; }
+
+/* 📱 모바일 전용 추가 튜닝 */
+@media (max-width:600px){
+
+.header{
+font-size:20px;
+}
+
+.title{
+font-size:15px;
+line-height:1.5;
+}
+
+.meta{
+font-size:10px;
+}
+
+.ticker-track{
+font-size:11px;
+animation:tickerMove 60s linear infinite;
+}
+
+button{
+font-size:12px;
+padding:9px 0;
+}
+
+}
 </style>
 </head>
 
