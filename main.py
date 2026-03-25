@@ -186,13 +186,8 @@ async def background_collector():
 
 @app.on_event("startup")
 async def startup():
-    loop = asyncio.get_event_loop()
-
-    news = await loop.run_in_executor(executor, collect_news)
-    CACHE.extend(news)
-
-    await loop.run_in_executor(executor, collect_markets)
-
+@app.on_event("startup")
+async def startup():
     asyncio.create_task(background_collector())
 
 @app.get("/api/news")
