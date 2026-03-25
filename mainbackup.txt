@@ -31,7 +31,6 @@ RSS_FEEDS = {
     "ABC": "https://abcnews.go.com/abcnews/internationalheadlines",
     "CBS": "https://www.cbsnews.com/latest/rss/world",
     "FOX": "https://moxie.foxnews.com/google-publisher/world.xml",
-    "DEFENSE NEWS": "https://www.defensenews.com/arc/outboundfeeds/rss/",
 }
 
 WAR_KEYWORDS = [
