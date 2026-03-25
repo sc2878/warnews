@@ -186,8 +186,7 @@ async def background_collector():
 
 @app.on_event("startup")
 async def startup():
-@app.on_event("startup")
-async def startup():
+
     asyncio.create_task(background_collector())
 
 @app.get("/api/news")
