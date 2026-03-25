@@ -11,7 +11,7 @@ import yfinance as yf
 app = FastAPI()
 
 # THREADPOOL
-executor = ThreadPoolExecutor(max_workers=5)
+executor = ThreadPoolExecutor(max_workers=2)
 
 # 메모리 캐시
 CACHE = []

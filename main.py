@@ -6,11 +6,12 @@ from datetime import datetime, timezone
 import hashlib
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import yfinance as yf
 
 app = FastAPI()
 
 # THREADPOOL
-executor = ThreadPoolExecutor(max_workers=5)
+executor = ThreadPoolExecutor(max_workers=2)
 
 # 메모리 캐시
 CACHE = []
@@ -137,34 +138,29 @@ def collect_news():
 
 def collect_markets():
     global MARKET_CACHE
-    results = []
+    results=[]
+    for symbol in MARKET_TICKERS:
+        try:
+            t = yf.Ticker(symbol)
 
-    try:
-        # 무료 경량 API (pandas 없음)
-        url = "https://query1.finance.yahoo.com/v7/finance/quote"
-        symbols = ",".join(MARKET_TICKERS)
-
-        r = requests.get(url, params={"symbols": symbols}, timeout=2)
-        data = r.json()["quoteResponse"]["result"]
-
-        for item in data:
-            symbol = item.get("symbol")
-            price = item.get("regularMarketPrice")
-            change = item.get("regularMarketChangePercent")
-
-            if price is None or change is None:
+            info = t.history(period="2d", interval="1d")
+            if info.empty or len(info) < 2:
                 continue
+
+            last_row = info.iloc[-1]
+            prev_row = info.iloc[-2]
+            price = float(last_row['Close'])
+            change_pct = ((last_row['Close'] - prev_row['Close']) / prev_row['Close'] * 100)
 
             results.append({
                 "name": MARKET_NAMES.get(symbol, symbol),
-                "price": float(price),
-                "change": f"{change:+.2f}"
+                "price": price,
+                "change": f"{change_pct:+.2f}"
             })
-
-    except:
-        pass
-
+        except:
+            continue
     MARKET_CACHE = results
+
 async def background_collector():
     global CACHE, LAST_UPDATE
 
@@ -209,7 +205,7 @@ async def index():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>War News</title>
+<title>워뉴스 Warnews</title>
 <style>
 body{
 background:#000;
@@ -223,59 +219,49 @@ top:0;
 background:#000;
 z-index:1000;
 border-bottom:1px solid #222;
-padding-bottom:0;
-}
-.topbar .container{
-padding-bottom:0;
-margin-bottom:0;
 }
 .container{
-max-width:1100px;
+max-width:900px;
 margin:auto;
-padding:0 20px 40px 20px;
+padding:0 16px;
 }
 .header{
-padding:20px 0 10px 0;
-font-size:28px;
+padding:16px 0 8px 0;
+font-size:22px;
 font-weight:600;
 }
-.ticker{
+
+/* 🔴 검색창 */
+.search-box{
+margin:8px 0 10px 0;
+}
+.search-box input{
 width:100%;
-overflow:hidden;
-border-top:1px solid #111;
-border-bottom:1px solid #111;
-background:#050505;
+padding:10px;
+border-radius:6px;
+border:1px solid #333;
+background:#111;
+color:white;
+font-size:14px;
+outline:none;
 }
-.ticker-track{
-white-space:nowrap;
-display:inline-block;
-padding:8px 0;
-animation:tickerMove 45s linear infinite;
-font-size:13px;
-}
-.ticker-item{
-margin-right:40px;
-}
-.up{ color:#22c55e; }
-.down{ color:#ef4444; }
-@keyframes tickerMove{
-0%{transform:translateX(0)}
-100%{transform:translateX(-50%)}
-}
+
+/* 🔴 버튼 간격 축소 */
 .buttons{
-padding:14px 0 16px 0;
+padding:8px 0 10px 0;
 }
 button{
-padding:8px 16px;
-margin-right:10px;
+padding:6px 12px;
+margin-right:6px;
 border:none;
 border-radius:6px;
 background:#1f1f1f;
 color:white;
 cursor:pointer;
-font-size:14px;
+font-size:13px;
 }
 button.active{ background:#2563eb; }
+
 #btn-BREAKING{
 background:#2a0f0f;
 border:1px solid #ef4444;
@@ -283,35 +269,38 @@ border:1px solid #ef4444;
 #btn-BREAKING.active{
 background:#3a1414;
 border:1px solid #ff4d4d;
-box-shadow:0 0 6px rgba(239,68,68,0.4);
+box-shadow:0 0 4px rgba(239,68,68,0.4);
 }
+
+/* 🔴 카드 간격 압축 */
 #news{
 width:100%;
-margin-top:10px;
+margin-top:6px;
 }
 .card{
 background:#1a1a1a;
-padding:12px 18px;
-border-radius:10px;
-margin-bottom:8px;
+padding:10px 14px;
+border-radius:8px;
+margin-bottom:6px;
 border:1px solid #2a2a2a;
 }
 .breaking-card{
 background:#2a0f0f;
 border:1px solid #ef4444;
-box-shadow:0 0 6px rgba(239,68,68,0.35);
+box-shadow:0 0 4px rgba(239,68,68,0.3);
 }
 .meta{
-font-size:12px;
+font-size:11px;
 color:#9ca3af;
-margin-bottom:4px;
+margin-bottom:2px;
 }
 .title{
-font-size:14px;
-line-height:1.35;
+font-size:13px;
+line-height:1.3;
 font-weight:500;
 }
 .breaking{ color:#ef4444; font-weight:600; }
+
 a{ text-decoration:none; color:white; }
 a:hover{ opacity:0.85; }
 </style>
@@ -321,10 +310,11 @@ a:hover{ opacity:0.85; }
 
 <div class="topbar">
 <div class="container">
-<div class="header">War News</div>
+<div class="header">워뉴스 Warnews</div>
 
-<div class="ticker">
-<div class="ticker-track" id="ticker"></div>
+<!-- 🔴 검색창 추가 -->
+<div class="search-box">
+<input type="text" id="searchInput" placeholder="뉴스 검색..." oninput="render()">
 </div>
 
 <div class="buttons">
@@ -352,14 +342,33 @@ render()
 
 function render(){
 const container=document.getElementById("news")
+const keyword=document.getElementById("searchInput").value.toLowerCase()
+
 container.innerHTML=""
-const filtered=currentFilter==="ALL"? allNews : allNews.filter(n=>n.breaking)
-if(filtered.length===0){ container.innerHTML="<p>관련 뉴스가 없습니다.</p>"; return }
+
+let filtered = currentFilter==="ALL" ? allNews : allNews.filter(n=>n.breaking)
+
+// 🔴 검색 필터 추가
+if(keyword){
+filtered = filtered.filter(n=> n.title.toLowerCase().includes(keyword))
+}
+
+if(filtered.length===0){
+container.innerHTML="<p>관련 뉴스가 없습니다.</p>"
+return
+}
+
 let html=[]
 filtered.forEach(n=>{
 const cardClass = n.breaking ? "card breaking-card" : "card"
-html.push(`<div class="${cardClass}"><div class="meta">${n.publisher} | ${n.time}</div><div class="title ${n.breaking ? "breaking":""}"><a href="${n.link}" target="_blank">${n.breaking ? "[속보] ":""}${n.title}</a></div></div>`)
+html.push(`<div class="${cardClass}">
+<div class="meta">${n.publisher} | ${n.time}</div>
+<div class="title ${n.breaking ? "breaking":""}">
+<a href="${n.link}" target="_blank">${n.breaking ? "[속보] ":""}${n.title}</a>
+</div>
+</div>`)
 })
+
 container.innerHTML = html.join("")
 }
 
@@ -373,27 +382,9 @@ render()
 document.getElementById("news").innerHTML="서버 연결 오류"
 }
 }
+
 loadNews()
 setInterval(loadNews,30000)
-
-// MARKET TICKER
-async function loadMarkets(){
-try{
-const res=await fetch("/api/markets")
-const data=await res.json()
-const ticker=document.getElementById("ticker")
-let tickerHtml=[]
-data.markets.forEach(m=>{
-const cls = parseFloat(m.change) < 0 ? "down" : "up"
-const priceFormatted = Number(m.price).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2})
-const changeFormatted = `(${m.change}%)`
-tickerHtml.push(`<span class="ticker-item"><span class="ticker-name" style="color:#ffffff">${m.name}</span> <span class="ticker-price ${cls}" style="color:${cls==='up'?'#22c55e':'#ef4444'}">${priceFormatted} ${changeFormatted}</span></span>`)
-})
-ticker.innerHTML = tickerHtml.join("") + tickerHtml.join("")
-}catch(e){console.log("Market API error",e)}
-}
-loadMarkets()
-setInterval(loadMarkets,10000)
 </script>
 
 </body>
