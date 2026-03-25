@@ -212,7 +212,6 @@ background:#000;
 margin:0;
 font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 color:white;
--webkit-text-size-adjust:100%;
 }
 .topbar{
 position:sticky;
@@ -229,11 +228,11 @@ margin-bottom:0;
 .container{
 max-width:1100px;
 margin:auto;
-padding:0 14px 30px 14px;
+padding:0 20px 40px 20px;
 }
 .header{
-padding:16px 0 8px 0;
-font-size:22px;
+padding:20px 0 10px 0;
+font-size:28px;
 font-weight:600;
 }
 .ticker{
@@ -246,12 +245,12 @@ background:#050505;
 .ticker-track{
 white-space:nowrap;
 display:inline-block;
-padding:6px 0;
+padding:8px 0;
 animation:tickerMove 45s linear infinite;
-font-size:12px;
+font-size:13px;
 }
 .ticker-item{
-margin-right:28px;
+margin-right:40px;
 }
 .up{ color:#22c55e; }
 .down{ color:#ef4444; }
@@ -260,17 +259,17 @@ margin-right:28px;
 100%{transform:translateX(-50%)}
 }
 .buttons{
-padding:10px 0 12px 0;
+padding:14px 0 16px 0;
 }
 button{
-flex:1;
-padding:10px 0;
+padding:8px 16px;
+margin-right:10px;
 border:none;
-border-radius:8px;
+border-radius:6px;
 background:#1f1f1f;
 color:white;
 cursor:pointer;
-font-size:13px;
+font-size:14px;
 }
 button.active{ background:#2563eb; }
 #btn-BREAKING{
@@ -284,12 +283,12 @@ box-shadow:0 0 6px rgba(239,68,68,0.4);
 }
 #news{
 width:100%;
-margin-top:8px;
+margin-top:10px;
 }
 .card{
 background:#1a1a1a;
-padding:12px 14px;
-border-radius:12px;
+padding:12px 18px;
+border-radius:10px;
 margin-bottom:8px;
 border:1px solid #2a2a2a;
 }
@@ -299,44 +298,18 @@ border:1px solid #ef4444;
 box-shadow:0 0 6px rgba(239,68,68,0.35);
 }
 .meta{
-font-size:11px;
+font-size:12px;
 color:#9ca3af;
 margin-bottom:4px;
 }
 .title{
 font-size:14px;
-line-height:1.45;
+line-height:1.35;
 font-weight:500;
-word-break:keep-all;
 }
 .breaking{ color:#ef4444; font-weight:600; }
 a{ text-decoration:none; color:white; }
 a:hover{ opacity:0.85; }
-
-@media (max-width:600px){
-
-.header{
-font-size:20px;
-}
-
-.title{
-font-size:15px;
-line-height:1.5;
-}
-
-.meta{
-font-size:10px;
-}
-
-.ticker-track{
-font-size:11px;
-animation:tickerMove 60s linear infinite;
-}
-
-button{
-font-size:12px;
-padding:9px 0;
-}
 </style>
 </head>
 
