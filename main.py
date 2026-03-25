@@ -188,7 +188,7 @@ async def index():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Global War Monitor</title>
+<title>War News</title>
 <style>
 body{
 background:#000;
@@ -300,7 +300,7 @@ a:hover{ opacity:0.85; }
 
 <div class="topbar">
 <div class="container">
-<div class="header">Global War Monitor</div>
+<div class="header">War News</div>
 
 <div class="ticker">
 <div class="ticker-track" id="ticker"></div>
